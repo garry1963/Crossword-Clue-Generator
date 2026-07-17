@@ -1,0 +1,5 @@
+{
+  "name": "Crossword Clue Generator",
+  "description": "Generate word and clue pairs for crossword puzzles based on a category.",
+  "requestFramePermissions": []
+}
