@@ -74,6 +74,10 @@ export default function App() {
   // Library filters
   const [searchQuery, setSearchQuery] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('All');
+  const [exportCategory, setExportCategory] = useState<string>('All');
+
+  // Unique categories in the library
+  const uniqueCategories = Array.from(new Set(library.map(item => item.category))).filter(Boolean).sort();
   
   // Manual form states
   const [showManualForm, setShowManualForm] = useState(false);
@@ -370,12 +374,20 @@ Rules:
     });
   };
 
-  // Export full Library to standard CSV format
+  // Export full Library or selected category to standard CSV format
   const exportLibraryToCSV = () => {
-    if (library.length === 0) return;
+    const itemsToExport = exportCategory === 'All'
+      ? library
+      : library.filter(item => item.category === exportCategory);
+
+    if (itemsToExport.length === 0) {
+      setLibraryMessage({ text: `No items in category "${exportCategory}" to export.`, type: 'error' });
+      setTimeout(() => setLibraryMessage(null), 3000);
+      return;
+    }
     
     const headers = 'Category,Clue,Answer,Difficulty,Hint\n';
-    const rows = library.map(item => 
+    const rows = itemsToExport.map(item => 
       `"${item.category.replace(/"/g, '""')}","${item.clue.replace(/"/g, '""')}","${item.answer.replace(/"/g, '""')}","${item.difficulty}","${item.hint.replace(/"/g, '""')}"`
     ).join('\n');
 
@@ -383,10 +395,17 @@ Rules:
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `crossword_pairs_${new Date().toISOString().slice(0,10)}.csv`);
+    const suffix = exportCategory === 'All' ? 'all' : exportCategory.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    link.setAttribute('download', `crossword_pairs_${suffix}_${new Date().toISOString().slice(0,10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    setLibraryMessage({ 
+      text: `Exported ${itemsToExport.length} pair(s) from "${exportCategory}" category!`, 
+      type: 'success' 
+    });
+    setTimeout(() => setLibraryMessage(null), 3000);
   };
 
   // Toggle reveal state for generated hints
@@ -648,13 +667,31 @@ Rules:
               </button>
 
               {library.length > 0 && (
-                <button
-                  onClick={exportLibraryToCSV}
-                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-all"
-                >
-                  <Download className="w-4 h-4" />
-                  Export to CSV
-                </button>
+                <div className="flex flex-wrap items-center gap-2 border border-slate-200 rounded-xl bg-white px-3 py-1.5 shadow-sm">
+                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                    <Filter className="w-3 h-3 text-slate-400" />
+                    Export Category:
+                  </span>
+                  <select
+                    value={exportCategory}
+                    onChange={(e) => setExportCategory(e.target.value)}
+                    className="text-sm font-semibold text-indigo-600 bg-transparent outline-none cursor-pointer hover:text-indigo-800 transition-colors"
+                  >
+                    <option value="All">All Categories</option>
+                    {uniqueCategories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                  <div className="h-4 w-px bg-slate-200 mx-1 hidden sm:block"></div>
+                  <button
+                    onClick={exportLibraryToCSV}
+                    className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-all cursor-pointer"
+                    title="Download CSV for Selected Category"
+                  >
+                    <Download className="w-4 h-4 text-slate-500" />
+                    <span>Export to CSV</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -889,15 +926,23 @@ Rules:
                 {library.length > 0 && (
                   <button
                     onClick={() => {
-                      const text = library.map(item => `"${item.category}","${item.clue}","${item.answer}","${item.difficulty}","${item.hint}"`).join('\n');
+                      const itemsToCopy = exportCategory === 'All'
+                        ? library
+                        : library.filter(item => item.category === exportCategory);
+                      const text = itemsToCopy.map(item => `"${item.category}","${item.clue}","${item.answer}","${item.difficulty}","${item.hint}"`).join('\n');
                       navigator.clipboard.writeText(text);
-                      setLibraryMessage({ text: 'Full Word Library copied to clipboard in CSV format!', type: 'success' });
+                      setLibraryMessage({ 
+                        text: exportCategory === 'All' 
+                          ? 'Full Word Library copied to clipboard in CSV format!' 
+                          : `Word Library for category "${exportCategory}" copied to clipboard in CSV format!`, 
+                        type: 'success' 
+                      });
                       setTimeout(() => setLibraryMessage(null), 3000);
                     }}
                     className="text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 cursor-pointer"
                   >
                     <Copy className="w-3.5 h-3.5" />
-                    Copy All Library to Clipboard (CSV)
+                    {exportCategory === 'All' ? 'Copy All Library to Clipboard (CSV)' : `Copy Category "${exportCategory}" to Clipboard (CSV)`}
                   </button>
                 )}
               </div>
