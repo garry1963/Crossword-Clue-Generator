@@ -384,12 +384,11 @@ Rules:
       return;
     }
     
-    const headers = 'Category,Clue,Answer,Difficulty,Hint\n';
     const rows = itemsToExport.map(item => 
-      `"${item.category.replace(/"/g, '""')}","${item.clue.replace(/"/g, '""')}","${item.answer.replace(/"/g, '""')}","${item.difficulty}","${item.hint.replace(/"/g, '""')}"`
+      `"${item.answer.replace(/"/g, '""')}","${item.clue.replace(/"/g, '""')}"`
     ).join('\n');
 
-    const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([rows], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
@@ -927,7 +926,7 @@ Rules:
                       const itemsToCopy = exportCategory === 'All'
                         ? library
                         : library.filter(item => item.category === exportCategory);
-                      const text = itemsToCopy.map(item => `"${item.category}","${item.clue}","${item.answer}","${item.difficulty}","${item.hint}"`).join('\n');
+                      const text = itemsToCopy.map(item => `"${item.answer.replace(/"/g, '""')}","${item.clue.replace(/"/g, '""')}"`).join('\n');
                       navigator.clipboard.writeText(text);
                       setLibraryMessage({ 
                         text: exportCategory === 'All' 
