@@ -160,20 +160,18 @@ export default function App() {
         model: 'gemini-3.5-flash',
         contents: `Generate exactly ${count} diverse and clever crossword puzzle word and clue sets for the category/theme: '${category}'. 
 The output MUST be strictly in standard comma-separated (CSV) format without headers.
-Format per line: Category,Clue,Answer,Difficulty,Hint
+Format per line: Answer,Clue
 
 Example format:
-"Space","The fourth planet from the Sun","MARS","Easy","Red planet"
-"Technology","The core software of a computer","OPERATINGSYSTEM","Medium","Windows or macOS are examples"
+"MARS","The fourth planet from the Sun"
+"OPERATINGSYSTEM","The core software of a computer"
 
 Rules:
 1. Ensure there are exactly ${count} rows of output.
-2. Each line must contain exactly 5 comma-separated values.
-3. Wrap all 5 fields in double quotes to gracefully handle commas inside clues or hints.
+2. Each line must contain exactly 2 comma-separated values (Answer, Clue).
+3. Wrap both fields in double quotes to gracefully handle commas inside clues.
 4. The 'Answer' must be a single uppercase word with no spaces or punctuation.
-5. The 'Difficulty' must be strictly one of: Easy, Medium, Hard.
-6. The 'Hint' should be a clever helpful clue or trivia that doesn't immediately give away the answer.
-7. Do not include markdown formatting, backticks, titles, list numbering, or conversational introduction. Just output raw lines.`,
+5. Do not include markdown formatting, backticks, titles, list numbering, or conversational introduction. Just output raw lines.`,
       });
 
       if (response.text) {
@@ -187,24 +185,24 @@ Rules:
         for (const line of rawLines) {
           // Attempt standard quote-aware parsing
           const parts = parseCSVLine(line);
-          if (parts.length >= 5) {
+          if (parts.length >= 2) {
             parsed.push({
-              category: cleanValue(parts[0]) || category || 'General',
+              category: category || 'General',
               clue: cleanValue(parts[1]) || 'No clue provided',
-              answer: cleanValue(parts[2]).toUpperCase().replace(/[^A-Z]/g, '') || 'ANSWER',
-              difficulty: cleanValue(parts[3]) || 'Medium',
-              hint: cleanValue(parts[4]) || 'No hint available'
+              answer: cleanValue(parts[0]).toUpperCase().replace(/[^A-Z]/g, '') || 'ANSWER',
+              difficulty: 'Medium',
+              hint: ''
             });
           } else {
             // Fallback for simple comma separation if quotes were omitted
             const simpleParts = line.split(',');
-            if (simpleParts.length >= 5) {
+            if (simpleParts.length >= 2) {
               parsed.push({
-                category: cleanValue(simpleParts[0]) || category || 'General',
+                category: category || 'General',
                 clue: cleanValue(simpleParts[1]) || 'No clue provided',
-                answer: cleanValue(simpleParts[2]).toUpperCase().replace(/[^A-Z]/g, '') || 'ANSWER',
-                difficulty: cleanValue(simpleParts[3]) || 'Medium',
-                hint: cleanValue(simpleParts[4]) || 'No hint available'
+                answer: cleanValue(simpleParts[0]).toUpperCase().replace(/[^A-Z]/g, '') || 'ANSWER',
+                difficulty: 'Medium',
+                hint: ''
               });
             }
           }
@@ -367,7 +365,7 @@ Rules:
 
   // Copy standard representation
   const copyToClipboard = () => {
-    const textToCopy = results.map(item => `"${item.category}","${item.clue}","${item.answer}","${item.difficulty}","${item.hint}"`).join('\n');
+    const textToCopy = results.map(item => `"${item.answer}","${item.clue}"`).join('\n');
     navigator.clipboard.writeText(textToCopy).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -467,7 +465,7 @@ Rules:
           </div>
           <div className="flex items-center gap-2 text-xs font-mono bg-slate-100 text-slate-600 px-3 py-1.5 rounded-full border border-slate-200 w-fit self-start sm:self-center">
             <Info className="w-3.5 h-3.5 text-slate-400" />
-            Format: Category, Clue, Answer, Difficulty, Hint
+            Format: Answer, Clue
           </div>
         </header>
 
@@ -553,7 +551,7 @@ Rules:
                     {results.length} Available
                   </span>
                 </h2>
-                <p className="text-xs text-slate-400 font-mono">Format: Category, Clue, Answer, Difficulty, Hint</p>
+                <p className="text-xs text-slate-400 font-mono">Format: Answer, Clue</p>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
