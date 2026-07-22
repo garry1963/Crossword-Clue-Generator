@@ -62,6 +62,7 @@ export default function App() {
   // Generator form states
   const [category, setCategory] = useState('');
   const [count, setCount] = useState<number>(10);
+  const [maxWordLength, setMaxWordLength] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<ClueItem[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -156,6 +157,10 @@ export default function App() {
 
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const lengthConstraintRule = maxWordLength 
+        ? `\n5. CRITICAL WORD LENGTH RULE: Every single Answer MUST have a maximum length of ${maxWordLength} letters (<= ${maxWordLength} characters). Do NOT output any answer that is longer than ${maxWordLength} letters.` 
+        : '';
+
       const response = await ai.models.generateContent({
         model: 'gemini-3.5-flash',
         contents: `Generate exactly ${count} diverse and clever crossword puzzle word and clue sets for the category/theme: '${category}'. 
@@ -170,8 +175,8 @@ Rules:
 1. Ensure there are exactly ${count} rows of output.
 2. Each line must contain exactly 2 comma-separated values (Answer, Clue).
 3. Wrap both fields in double quotes to gracefully handle commas inside clues.
-4. The 'Answer' must be a single uppercase word with no spaces or punctuation.
-5. Do not include markdown formatting, backticks, titles, list numbering, or conversational introduction. Just output raw lines.`,
+4. The 'Answer' must be a single uppercase word with no spaces or punctuation.${lengthConstraintRule}
+6. Do not include markdown formatting, backticks, titles, list numbering, or conversational introduction. Just output raw lines.`,
       });
 
       if (response.text) {
@@ -471,9 +476,9 @@ Rules:
         {/* Generator Controls */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 sm:p-8">
           <form onSubmit={generateClues} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               
-              <div className="md:col-span-2 space-y-2">
+              <div className="md:col-span-2 lg:col-span-2 space-y-2">
                 <label htmlFor="category" className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
                   Choose Category or Theme
                 </label>
@@ -502,6 +507,31 @@ Rules:
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all outline-none text-slate-800 bg-slate-50 focus:bg-white"
                   disabled={loading}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="maxWordLength" className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Max Word Length
+                </label>
+                <select
+                  id="maxWordLength"
+                  value={maxWordLength}
+                  onChange={(e) => setMaxWordLength(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all outline-none text-slate-800 bg-slate-50 focus:bg-white cursor-pointer"
+                  disabled={loading}
+                >
+                  <option value="">Any Length (No Limit)</option>
+                  <option value="3">Max 3 letters</option>
+                  <option value="4">Max 4 letters</option>
+                  <option value="5">Max 5 letters</option>
+                  <option value="6">Max 6 letters</option>
+                  <option value="7">Max 7 letters</option>
+                  <option value="8">Max 8 letters</option>
+                  <option value="9">Max 9 letters</option>
+                  <option value="10">Max 10 letters</option>
+                  <option value="12">Max 12 letters</option>
+                  <option value="15">Max 15 letters</option>
+                </select>
               </div>
 
             </div>
@@ -603,8 +633,11 @@ Rules:
                     </div>
 
                     <div className="flex flex-col sm:flex-row sm:items-baseline gap-2">
-                      <div className="font-mono font-bold text-indigo-600 text-lg uppercase tracking-wider min-w-[140px] shrink-0">
-                        {item.answer}
+                      <div className="font-mono font-bold text-indigo-600 text-lg uppercase tracking-wider min-w-[140px] shrink-0 flex items-center gap-2">
+                        <span>{item.answer}</span>
+                        <span className="text-[10px] font-sans font-normal text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                          {item.answer.length} {item.answer.length === 1 ? 'letter' : 'letters'}
+                        </span>
                       </div>
                       <div className="text-slate-700 font-medium text-base">
                         {item.clue}
@@ -865,9 +898,14 @@ Rules:
                         <tr key={item.id} className="group hover:bg-indigo-50/10 transition-colors">
                           <td className="px-6 py-4">
                             <div className="flex flex-col gap-1">
-                              <span className="font-mono font-bold text-indigo-700 uppercase text-base tracking-wider">
-                                {item.answer}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono font-bold text-indigo-700 uppercase text-base tracking-wider">
+                                  {item.answer}
+                                </span>
+                                <span className="text-[10px] font-sans font-normal text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                                  {item.answer.length} {item.answer.length === 1 ? 'letter' : 'letters'}
+                                </span>
+                              </div>
                               <span className={`text-[10px] w-fit font-mono uppercase tracking-wider px-1.5 py-0.5 rounded border ${getDifficultyBadge(item.difficulty)}`}>
                                 {item.difficulty}
                               </span>
